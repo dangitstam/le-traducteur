@@ -40,12 +40,13 @@ local_settings.py
 instance/
 .webassets-cache
 
+# IDES
+.idea
+.vscode
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-
-# IntelliJ
-.idea
 
 # Jupyter Notebook
 .ipynb_checkpoints
