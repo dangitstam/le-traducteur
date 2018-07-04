@@ -14,7 +14,7 @@ def main():
     single corpus - a jsonl containing one example per line, where examples
     consist of a JSON object of the form:
 
-    { id: Line #, "en": <The English Utterance>, "fr": <The French utterance> }
+    {"id": Line #, "en": <The English Utterance>, "fr": <The French utterance>}
 
     Parallel corpora europarl-v7.fr-en.en,  europarl-v7.fr-en.fr are found here
     http://www.statmt.org/europarl/v7/fr-en.tgz
