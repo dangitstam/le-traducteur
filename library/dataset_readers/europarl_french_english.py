@@ -74,9 +74,9 @@ class EuroparlDatasetReader(DatasetReader):
     def from_params(cls, params: Params) -> 'EuroparlDatasetReader':
         lazy = params.pop('lazy', False)
         en_tokenizer = Tokenizer.from_params(params.pop('en_tokenizer', {}))
-        en_token_indexers = TokenIndexer.from_params(params.pop('en_token_indexers', {}))
+        en_token_indexers = TokenIndexer.dict_from_params(params.pop('en_token_indexers', {}))
         fr_tokenizer = Tokenizer.from_params(params.pop('fr_tokenizer', {}))
-        fr_token_indexers = TokenIndexer.from_params(params.pop('fr_token_indexers', {}))
+        fr_token_indexers = TokenIndexer.dict_from_params(params.pop('fr_token_indexers', {}))
         params.assert_empty(cls.__name__)
         return cls(lazy=lazy,
                    en_tokenizer=en_tokenizer, en_token_indexers=en_token_indexers,
