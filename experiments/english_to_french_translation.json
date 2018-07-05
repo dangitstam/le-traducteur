@@ -1,0 +1,73 @@
+{
+  "dataset_reader": {
+    "type": "europarl_combined_french_english",
+    "en_tokenizer": {
+      "type": "word",
+      "start_tokens": ["@start@"],
+      "end_tokens": ["@end@"]
+    },
+    "fr_tokenizer": {
+      "type": "word",
+      "word_splitter": {
+        "language": "fr_core_news_sm"
+      },
+      "start_tokens": ["@start@"],
+      "end_tokens": ["@end@"]
+    }
+  },
+  "train_data_path": "europarl_en_fr.jsonl",
+  "validation_data_path": "europarl_en_fr.jsonl",
+  "vocabulary": {
+    "max_vocab_size": {
+      "en": 160000,
+      "fr": 80000
+    }
+  },
+  "model": {
+    "type": "english_to_french",
+    "en_field_embedder": {
+      "tokens": {
+        "type": "embedding",
+        "embedding_dim": 100,
+        "trainable": false
+      }
+    },
+    "fr_field_embedder": {
+      "tokens": {
+        "type": "embedding",
+        "embedding_dim": 100,
+        "trainable": false
+      }
+    },
+    "en_encoder": {
+      "type": "rnn",
+      "input_size": 100,
+      "hidden_size": 100
+    },
+    "fr_encoder": {
+      "type": "rnn",
+      "input_size": 100,
+      "hidden_size": 100
+    },
+    "fr_decoder": {
+      "input_dim": 100,
+      "num_layers": 2,
+      "hidden_dims": [5000, 80002],
+      "activations": ["relu", "sigmoid"],
+      "dropout": [0.4, 0.0]
+    }
+  },
+  "iterator": {
+    "type": "basic",
+    "batch_size": 64
+  },
+
+  "trainer": {
+    "num_epochs": 1,
+    "cuda_device": -1,
+    "grad_clipping": 5.0,
+    "optimizer": {
+      "type": "adam"
+    }
+  }
+}
