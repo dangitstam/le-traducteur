@@ -42,26 +42,16 @@ class EnglishToFrenchEncoderDecoder(Model):
                                      "embedding size of the fr_field_embedder. Found {} and {}, "
                                      "respectively.".format(fr_encoder.get_input_dim(),
                                                             fr_field_embedder.get_output_dim()))
-        # if fr_encoder.get_hid() != en_encoder.get_output_dim():
-        #     raise ConfigurationError("The hidden dimension of the fr_encoder must match the "
-        #                              "output dimension of the en_encoder. Found {} and {}, "
-        #                              "respectively.".format(fr_encoder.get_hid(),
-        #                                                     en_encoder.get_output_dim()))
         if fr_decoder.get_input_dim() != fr_encoder.get_output_dim():
             raise ConfigurationError("The input dimension of the fr_decoder must match the "
                                      "output dimension of the fr_encoder. Found {} and {}, "
                                      "respectively.".format(fr_decoder.get_input_dim(),
                                                             fr_encoder.get_output_dim()))
-        # if fr_decoder.get_hid() != fr_encoder.get_output_dim():
-        #     raise ConfigurationError("The input dimension of the fr_encoder must match the "
-        #                              "hidden size of the en_encoder. Found {} and {}, "
-        #                              "respectively.".format(fr_encoder.get_input_dim(),
-        #                                                     fr_encoder.get_output_dim()))
-        # if fr_decoder.get_output_dim() != vocab.get_vocab_size("fr"):
-        #     raise ConfigurationError("The output dimension of the fr_decoder must match the "
-        #                              "size of the French vocabulary. Found {} and {}, "
-        #                              "respectively.".format(fr_decoder.get_output_dim(),
-        #                                                     vocab.get_vocab_size("fr")))
+        if fr_decoder.get_output_dim() != vocab.get_vocab_size("fr"):
+            raise ConfigurationError("The output dimension of the fr_decoder must match the "
+                                     "size of the French vocabulary. Found {} and {}, "
+                                     "respectively.".format(fr_decoder.get_output_dim(),
+                                                            vocab.get_vocab_size("fr")))
 
         self.en_vocab_size = vocab.get_vocab_size("en")
         self.fr_vocab_size = vocab.get_vocab_size("fr")
@@ -71,7 +61,19 @@ class EnglishToFrenchEncoderDecoder(Model):
         self.fr_encoder = fr_encoder
         self.fr_decoder = fr_decoder
 
-        # Trains on negative log likelihood to maximize likelihood of tranlsations.
+        # Used for prepping the translation primer
+        # (initialization of the French word-level encoder's hidden state).
+        #
+        # If the French word-level encoder is an LSTM, the hidden state as well as the
+        # cell state must be initialized.
+        #
+        # Also, hidden states that prime translation via this encoder must be duplicated
+        # across by number of layers it has.
+        self._en_encoder_hidden_size = self.en_encoder._module.hidden_size
+        self._fr_encoder_is_lstm = isinstance(self.fr_encoder._module, torch.nn.LSTM)
+        self._fr_encoder_num_layers = self.fr_encoder._module.num_layers
+
+        # Trains to maximize likelihood of tranlsations.
         self.loss = torch.nn.CrossEntropyLoss()
 
         initializer(self)
@@ -83,21 +85,33 @@ class EnglishToFrenchEncoderDecoder(Model):
         output_dict = {}
         # Embed and encode the English utterance.
         # Results in a single vector representing the utterance.
-        # Shape: (batch, en_hidden_size)
         embedded_en_utterance = self.en_field_embedder(en)
         en_utterance_mask = util.get_text_field_mask(en)
         encoded_en_utterance = self.en_encoder(embedded_en_utterance, en_utterance_mask)
+
+        # Prep the hidden state initialization of the word-level French LSTM.
+        # Shape (no cell state): (num_layers, batch, en_hidden_size)
+        # Shape (with cell state): Tuple of (num_layers, batch, en_hidden_size)'s
+        fr_translation_primer = encoded_en_utterance.unsqueeze(0)
+        fr_translation_primer = fr_translation_primer.expand(
+            self._fr_encoder_num_layers,
+            -1,  # Inferred from the other two.
+            self._en_encoder_hidden_size
+        )
+        if self._fr_encoder_is_lstm:
+            fr_translation_primer = (fr_translation_primer,
+                                     torch.zeros_like(fr_translation_primer))
 
         # Embed and encode the French utterance.
         # Results in several vectors representing the utterance.
         # Shape: (batch, sequence_length, fr_hidden_size)
         embedded_fr_utterance = self.fr_field_embedder(fr)
         fr_utterance_mask = util.get_text_field_mask(fr)
-        encoded_fr_utterance = self.fr_encoder(embedded_fr_utterance,
-                                               fr_utterance_mask,
-                                               hidden_state=encoded_en_utterance
-                                                            .unsqueeze(0))
+        encoded_fr_utterance = self.fr_encoder(embedded_fr_utterance, fr_utterance_mask,
+                                               hidden_state=fr_translation_primer)
 
+        # Logits are likelihoods of each word in the vocabulary being the correct
+        # word at that time step.
         logits = self.fr_decoder(encoded_fr_utterance)
         output_dict["logits"] = logits
 
@@ -119,15 +133,11 @@ class EnglishToFrenchEncoderDecoder(Model):
         fr_embedder_params = params.pop("fr_field_embedder")
         en_field_embedder = TextFieldEmbedder.from_params(vocab, en_embedder_params)
         fr_field_embedder = TextFieldEmbedder.from_params(vocab, fr_embedder_params)
-
         en_encoder = Seq2VecEncoder.from_params(params.pop("en_encoder"))
         fr_encoder = Seq2SeqEncoder.from_params(params.pop("fr_encoder"))
-
         fr_decoder = FeedForward.from_params(params.pop("fr_decoder"))
-
         initializer = InitializerApplicator.from_params(params.pop('initializer', []))
         regularizer = RegularizerApplicator.from_params(params.pop('regularizer', []))
-
         return cls(vocab=vocab,
                    en_field_embedder=en_field_embedder,
                    fr_field_embedder=fr_field_embedder,
