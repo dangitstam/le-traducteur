@@ -4,8 +4,6 @@ import logging
 
 from overrides import overrides
 
-import tqdm
-
 from allennlp.common import Params
 from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
@@ -17,6 +15,8 @@ from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+
+# TODO: Generalize this to any pair of languages languages.
 @DatasetReader.register("europarl_combined_french_english")
 class EuroparlDatasetReader(DatasetReader):
     """
@@ -27,14 +27,35 @@ class EuroparlDatasetReader(DatasetReader):
 
     Fields not listed above will be ignored.
 
+    Each ``read`` yields a data instance of
+        en: ``TextField``
+        fr: ``TextField``
 
+    Parameters
+    ----------
+    lazy : ``bool`` (optional, default=False)
+        Passed to ``DatasetReader``.  If this is ``True``, training will start sooner, but will
+        take longer per batch.  This also allows training with datasets that are too large to fit
+        in memory.
+    en_tokenizer : ``Tokenizer``, optional
+        Tokenizer to use to split English utterances into tokens.
+        Defaults to ``WordTokenizer()``.
+    fr_tokenizer : ``Tokenizer``, optional
+        Tokenizer to use to split French utterances into tokens.
+        Defaults to ``WordTokenizer(SpacyWordSplitter(language=;fr_core_news_sm)``.
+    en_token_indexers : ``Dict[str, TokenIndexer]``, optional
+        Indexers used to define English token representations. Defaults to ``{"tokens":
+        SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)}``.
+    fr_token_indexers : ``Dict[str, TokenIndexer]``, optional
+        Indexers used to define French token representations. Defaults to ``{"tokens":
+        SingleIdTokenIndexer(namespace="fr", lowercase_tokens=True)}``.
     """
     def __init__(self,
                  lazy: bool = False,
-                 en_tokenizer : Tokenizer = None,
+                 en_tokenizer: Tokenizer = None,
                  fr_tokenizer: Tokenizer = None,
-                 en_token_indexers : Dict[str, TokenIndexer] = None,
-                 fr_token_indexers : Dict[str, TokenIndexer] = None) -> None:
+                 en_token_indexers: Dict[str, TokenIndexer] = None,
+                 fr_token_indexers: Dict[str, TokenIndexer] = None) -> None:
         super().__init__(lazy)
         self._en_tokenizer = en_tokenizer or WordTokenizer()
         self._en_token_indexers = en_token_indexers or {"tokens": SingleIdTokenIndexer(
@@ -66,14 +87,12 @@ class EuroparlDatasetReader(DatasetReader):
                 yield self.text_to_instance(en_utterance, fr_utterance)
 
     @overrides
-    def text_to_instance(self, en_utterance : str, fr_utterance : str) -> Instance: # type: ignore
+    def text_to_instance(self, en_utterance : str, fr_utterance : str) -> Instance:  # type: ignore
         en_utterance_tokenized = self._en_tokenizer.tokenize(en_utterance)
         fr_utterance_tokenized = self._fr_tokenizer.tokenize(fr_utterance)
-        en_utterance_field = TextField(en_utterance_tokenized, self._en_token_indexers)
-        fr_utterance_field = TextField(fr_utterance_tokenized, self._fr_token_indexers)
         fields = {
-            'en': en_utterance_field,
-            'fr': fr_utterance_field
+            'en': TextField(en_utterance_tokenized, self._en_token_indexers),
+            'fr': TextField(fr_utterance_tokenized, self._fr_token_indexers)
         }
         return Instance(fields)
 
@@ -81,8 +100,8 @@ class EuroparlDatasetReader(DatasetReader):
     def from_params(cls, params: Params) -> 'EuroparlDatasetReader':
         lazy = params.pop('lazy', False)
         en_tokenizer = Tokenizer.from_params(params.pop('en_tokenizer', {}))
-        en_token_indexers = TokenIndexer.dict_from_params(params.pop('en_token_indexers', {}))
         fr_tokenizer = Tokenizer.from_params(params.pop('fr_tokenizer', {}))
+        en_token_indexers = TokenIndexer.dict_from_params(params.pop('en_token_indexers', {}))
         fr_token_indexers = TokenIndexer.dict_from_params(params.pop('fr_token_indexers', {}))
         params.assert_empty(cls.__name__)
         return cls(lazy=lazy,

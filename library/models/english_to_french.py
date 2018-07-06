@@ -11,6 +11,7 @@ from allennlp.models.model import Model
 from allennlp.nn import util
 from allennlp.nn import InitializerApplicator, RegularizerApplicator
 
+
 @Model.register("english_to_french")
 class EnglishToFrenchEncoderDecoder(Model):
     """
@@ -19,16 +20,15 @@ class EnglishToFrenchEncoderDecoder(Model):
     English is encoded via a deep LSTM ``backwards``. The resulting hidden state then primes
     generation of the equivalent French utterance using another deep LSTM.
     """
-
     def __init__(self,
-                 vocab : Vocabulary,
-                 en_field_embedder : TextFieldEmbedder,
-                 fr_field_embedder : TextFieldEmbedder,
+                 vocab: Vocabulary,
+                 en_field_embedder: TextFieldEmbedder,
+                 fr_field_embedder: TextFieldEmbedder,
                  # Only the last hidden state is needed from english.
-                 en_encoder : Seq2VecEncoder,
+                 en_encoder: Seq2VecEncoder,
                  # But each French word will have to be encoded and pushed through a decoder.
-                 fr_encoder : Seq2SeqEncoder,
-                 fr_decoder : FeedForward,
+                 fr_encoder: Seq2SeqEncoder,
+                 fr_decoder: FeedForward,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
         super().__init__(vocab, regularizer)
@@ -73,7 +73,7 @@ class EnglishToFrenchEncoderDecoder(Model):
         self._fr_encoder_is_lstm = isinstance(self.fr_encoder._module, torch.nn.LSTM)
         self._fr_encoder_num_layers = self.fr_encoder._module.num_layers
 
-        # Trains to maximize likelihood of tranlsations.
+        # Trains to maximize likelihood of translations.
         self.loss = torch.nn.CrossEntropyLoss()
 
         initializer(self)
@@ -85,7 +85,7 @@ class EnglishToFrenchEncoderDecoder(Model):
         output_dict = {}
         # Embed and encode the English utterance.
         # Results in a single vector representing the utterance.
-        embedded_en_utterance = self.en_field_embedder(en)
+        embedded_en_utterance = self.en_field_embedder(en)  # TODO: Reverse the utterance.
         en_utterance_mask = util.get_text_field_mask(en)
         encoded_en_utterance = self.en_encoder(embedded_en_utterance, en_utterance_mask)
 
@@ -125,7 +125,6 @@ class EnglishToFrenchEncoderDecoder(Model):
         output_dict["loss"] = self.loss(logits, targets)
         
         return output_dict
-
 
     @classmethod
     def from_params(cls, vocab: Vocabulary, params: Params) -> 'EnglishToFrenchEncoderDecoder':
