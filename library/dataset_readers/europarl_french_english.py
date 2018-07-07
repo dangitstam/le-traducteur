@@ -16,7 +16,7 @@ from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-# TODO: Generalize this to any pair of languages languages.
+# TODO: Generalize this to any pair of languages.
 @DatasetReader.register("europarl_combined_french_english")
 class EuroparlDatasetReader(DatasetReader):
     """
@@ -58,10 +58,9 @@ class EuroparlDatasetReader(DatasetReader):
                  fr_token_indexers: Dict[str, TokenIndexer] = None) -> None:
         super().__init__(lazy)
         self._en_tokenizer = en_tokenizer or WordTokenizer()
-        self._en_token_indexers = en_token_indexers or {"tokens": SingleIdTokenIndexer(
-            namespace="en",
-            lowercase_tokens=True
-        )}
+        self._en_token_indexers = en_token_indexers or {
+            "tokens": SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)
+        }
 
         # To tokenize French, will have to opt for spaCy's pre-trained French
         # model. SpaCy's English parser is the default for WordTokenizer.
@@ -87,7 +86,7 @@ class EuroparlDatasetReader(DatasetReader):
                 yield self.text_to_instance(en_utterance, fr_utterance)
 
     @overrides
-    def text_to_instance(self, en_utterance : str, fr_utterance : str) -> Instance:  # type: ignore
+    def text_to_instance(self, en_utterance: str, fr_utterance: str) -> Instance:  # type: ignore
         en_utterance_tokenized = self._en_tokenizer.tokenize(en_utterance)
         fr_utterance_tokenized = self._fr_tokenizer.tokenize(fr_utterance)
         fields = {
@@ -104,6 +103,5 @@ class EuroparlDatasetReader(DatasetReader):
         en_token_indexers = TokenIndexer.dict_from_params(params.pop('en_token_indexers', {}))
         fr_token_indexers = TokenIndexer.dict_from_params(params.pop('fr_token_indexers', {}))
         params.assert_empty(cls.__name__)
-        return cls(lazy=lazy,
-                   en_tokenizer=en_tokenizer, en_token_indexers=en_token_indexers,
-                   fr_tokenizer=fr_tokenizer, fr_token_indexers=fr_token_indexers)
+        return cls(lazy=lazy, en_tokenizer=en_tokenizer, en_token_indexers=en_token_indexers,
+                              fr_tokenizer=fr_tokenizer, fr_token_indexers=fr_token_indexers)
