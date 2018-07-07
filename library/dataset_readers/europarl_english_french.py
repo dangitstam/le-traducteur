@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 # TODO: Generalize this to any pair of languages.
-@DatasetReader.register("europarl_combined_french_english")
+@DatasetReader.register("europarl_parallel_french_english")
 class EuroparlDatasetReader(DatasetReader):
     """
     Reads a jsonl containing parallel English-French utterances from the

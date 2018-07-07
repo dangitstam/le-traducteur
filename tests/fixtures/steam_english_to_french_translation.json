@@ -1,6 +1,6 @@
 {
   "dataset_reader": {
-    "type": "europarl_combined_french_english",
+    "type": "europarl_parallel_french_english",
     "en_tokenizer": {
       "type": "word",
       "start_tokens": ["%start@"],

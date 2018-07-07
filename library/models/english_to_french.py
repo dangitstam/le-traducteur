@@ -12,8 +12,8 @@ from allennlp.nn import util
 from allennlp.nn import InitializerApplicator, RegularizerApplicator
 
 
-@Model.register("english_to_french")
-class EnglishToFrenchEncoderDecoder(Model):
+@Model.register("english_to_french_seq2seq")
+class EnglishToFrenchEncoderSeq2Seq(Model):
     """
     Replication of Sutskever et al.'s ``Sequence-to-Sequence`` model for the English to French task.
 
