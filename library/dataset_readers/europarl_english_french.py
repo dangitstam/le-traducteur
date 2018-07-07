@@ -15,9 +15,8 @@ from overrides import overrides
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-# TODO: Generalize this to any pair of languages.
-@DatasetReader.register("europarl_parallel_french_english")
-class EuroparlDatasetReader(DatasetReader):
+@DatasetReader.register("europarl_parallel_english_french")
+class EuroparlEnglishFrenchReader(DatasetReader):
     """
     Reads a jsonl containing parallel English-French utterances from the
     proceedings of the European Parliament - http://www.statmt.org/europarl/
