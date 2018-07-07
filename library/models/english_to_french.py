@@ -1,15 +1,14 @@
 from typing import Dict, Optional
 
-from overrides import overrides
 import torch
-
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
 from allennlp.data.vocabulary import Vocabulary
-from allennlp.modules import FeedForward, Seq2VecEncoder, Seq2SeqEncoder, TextFieldEmbedder
 from allennlp.models.model import Model
-from allennlp.nn import util
-from allennlp.nn import InitializerApplicator, RegularizerApplicator
+from allennlp.modules import (FeedForward, Seq2SeqEncoder, Seq2VecEncoder,
+                              TextFieldEmbedder)
+from allennlp.nn import InitializerApplicator, RegularizerApplicator, util
+from overrides import overrides
 
 
 @Model.register("english_to_french_seq2seq")

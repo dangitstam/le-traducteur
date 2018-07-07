@@ -3,7 +3,9 @@
 from allennlp.common.testing import AllenNlpTestCase
 from allennlp.common.util import ensure_list
 
-from library.dataset_readers.europarl_french_english import EuroparlDatasetReader
+from library.dataset_readers.europarl_english_french import \
+    EuroparlDatasetReader
+
 
 class TestEuroparlDatasetReader(AllenNlpTestCase):
     def test_read_from_file(self):

@@ -1,8 +1,8 @@
-import os
+import argparse
 import json
+import os
 import sys
 
-import argparse
 from tqdm import tqdm
 
 

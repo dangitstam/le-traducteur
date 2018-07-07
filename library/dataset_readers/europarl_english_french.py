@@ -1,17 +1,16 @@
-from typing import Dict
 import json
 import logging
-
-from overrides import overrides
+from typing import Dict
 
 from allennlp.common import Params
 from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.fields import TextField
 from allennlp.data.instance import Instance
+from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenIndexer
 from allennlp.data.tokenizers import Tokenizer, WordTokenizer
 from allennlp.data.tokenizers.word_splitter import SpacyWordSplitter
-from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
+from overrides import overrides
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
