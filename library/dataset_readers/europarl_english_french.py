@@ -56,19 +56,16 @@ class EuroparlEnglishFrenchReader(DatasetReader):
                  fr_token_indexers: Dict[str, TokenIndexer] = None) -> None:
         super().__init__(lazy)
         self._en_tokenizer = en_tokenizer or WordTokenizer()
+        self._fr_tokenizer = fr_tokenizer or WordTokenizer(
+            # Specify spaCy's French model instead (English is the default).
+            word_splitter=SpacyWordSplitter(language='fr_core_news_sm')
+        )
         self._en_token_indexers = en_token_indexers or {
             "tokens": SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)
         }
-
-        # To tokenize French, will have to opt for spaCy's pre-trained French
-        # model. SpaCy's English parser is the default for WordTokenizer.
-        self._fr_tokenizer = fr_tokenizer or WordTokenizer(
-            word_splitter=SpacyWordSplitter(language='fr_core_news_sm')
-        )
-        self._fr_token_indexers = fr_token_indexers or {"tokens": SingleIdTokenIndexer(
-            namespace="fr",
-            lowercase_tokens=True,
-        )}
+        self._fr_token_indexers = fr_token_indexers or {
+            "tokens": SingleIdTokenIndexer(namespace="fr", lowercase_tokens=True)
+        }
 
     @overrides
     def _read(self, file_path):
