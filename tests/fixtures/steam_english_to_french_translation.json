@@ -21,7 +21,7 @@
     "max_vocab_size": { "en": 10000, "fr": 10000 }
   },
   "model": {
-    "type": "english_to_french",
+    "type": "english_to_french_seq2seq",
     "en_field_embedder": {
       "tokens": {
         "type": "embedding",
