@@ -4,12 +4,12 @@ from allennlp.common.testing import AllenNlpTestCase
 from allennlp.common.util import ensure_list
 
 from library.dataset_readers.europarl_english_french import \
-    EuroparlDatasetReader
+    EuroparlEnglishFrenchReader
 
 
-class TestEuroparlDatasetReader(AllenNlpTestCase):
+class TestEuroparlEnglishFrenchReader(AllenNlpTestCase):
     def test_read_from_file(self):
-        reader = EuroparlDatasetReader()
+        reader = EuroparlEnglishFrenchReader()
         dataset = reader.read('tests/fixtures/smoke_europarl_en_fr.jsonl')
         instances = ensure_list(dataset)
         instance0 = {
