@@ -15,10 +15,10 @@
       }
     }
   },
-  "train_data_path": "tests/fixtures/steam_europarl_en_fr.jsonl",
-  "validation_data_path": "tests/fixtures/steam_europarl_en_fr.jsonl",
+  "train_data_path": "europarl_en_fr.jsonl",
+  "validation_data_path": "europarl_en_fr.jsonl",
   "vocabulary": {
-    "max_vocab_size": { "en": 10000, "fr": 10000 }
+    "max_vocab_size": { "en": 16000, "fr": 80000 }
   },
   "model": {
     "type": "english_to_french_seq2seq",
@@ -37,7 +37,7 @@
       }
     },
     "en_encoder": {
-      "type": "rnn",
+      "type": "lstm",
       "num_layers": 4,
       "input_size": 100,
       "hidden_size": 256
