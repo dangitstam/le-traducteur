@@ -63,9 +63,9 @@
   },
 
   "trainer": {
-    "num_epochs": 25,
+    "num_epochs": 10,
     "patience": 10,
-    "cuda_device": -1,
+    "cuda_device": 1,
     "grad_clipping": 1.0,
     "optimizer": {
       "type": "adagrad"

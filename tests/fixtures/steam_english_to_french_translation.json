@@ -59,7 +59,7 @@
   "iterator": {
     "type": "bucket",
     "sorting_keys": [["en", "num_tokens"], ["fr", "num_tokens"]],
-    "batch_size": 64
+    "batch_size": 10
   },
 
   "trainer": {
