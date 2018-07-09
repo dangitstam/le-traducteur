@@ -8,17 +8,17 @@ from tqdm import tqdm
 
 def main():
     """
-    A pre-processing step before training Le Traducteur.
+    A tool for producing a parallel corpus with which to train Le Traducteur.
     
-    Given files from the Europarl parallel corpora, constructs a single corpus - a jsonl containing
-    one example per line, where examples consist of a JSON object of the form:
+    Given a pair of monolingual transcriptions where transcriptions differ in language, constructs
+    a single corpus - a jsonl containing one example per line.
+    
+    Each example consists of a JSON object of the form:
     {
       "id": Line #,
       <src-language>: <the src utterance>,
       <dst-language>: <the dst utterance>
     }
-
-    Parallel corpora are found here - http://www.statmt.org/europarl/
     """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)

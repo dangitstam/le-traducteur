@@ -47,11 +47,9 @@ Several tokenizers used rely on [NLTK](https://www.nltk.org/) and [spaCy](https:
 Go to the root directory of this repository and run `pytest` to verify the provided dataset readers are working.
 
 ### Creating a corpus
-`scripts/generate_parallel_europarl.py` is a provided tool to create combined parallel Europarl corpus for any language pair are provided. It is recommend to refer to languages via their [ISO codes](https://en.wikipedia.org/wiki/ISO_3166-1) when using this script and the framework in general.
+[`generate_parallel_corpus.py`](scripts/generate_parallel_corpus.py) is a provided tool to create a combined parallel corpus for any language pair. It is recommend to refer to languages via their [ISO codes](https://en.wikipedia.org/wiki/ISO_3166-1) when using this script and the framework in general.
 
-This script can be used for any parallel corpus. It only makes the assumption that the files it is given are:
-* The same number of lines
-* Where a line in one file is a translation of the other file at the same line
+This script can be used for any pair of monolingual transcriptions. It only makes the assumption that the files it is given have the same number of lines, where each line in one file is a translation of the other file at the same place.
 
 Arguments to this script are:
 * src language: The ISO code of the source language in which to translate from
@@ -70,7 +68,7 @@ A [jsonl](http://jsonlines.org/) file containing a single JSON object per line o
 }
 ```
 
-An example dataset reader meant for reading the Europarl French-to-English dataset is provided in [europarl_french_english.py](library/dataset_readers/europarl_english_french.py).
+An example dataset reader meant for reading the Europarl French-to-English dataset is provided in [`europarl_french_english.py`](library/dataset_readers/europarl_english_french.py). [`smoke_europarl_en_fr.jsonl`](tests/fixtures/smoke_europarl_en_fr.jsonl) is a subset of the full English-French parallel corpus produced by passing the Europarl transcriptions to [`generate_parallel_corpus.py`](scripts/generate_parallel_corpus.py).
 
 ## Experiments
 
