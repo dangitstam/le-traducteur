@@ -61,8 +61,9 @@ def main():
     out_dir = os.path.join(args.save_dir, corpus_name)
     try:
         if os.path.exists(out_dir):
-            input("Train-dev-test split for corpus {} already exists.\n"
-                  "Press <Ctrl-c> to exit or <Enter> to recreate it.".format(out_dir))
+            input("Train-development-test split for corpus {} already exists.\n"
+                  "Press <Ctrl-c> to exit or <Enter> to recreate it."
+                  .format(args.corpus_path))
             shutil.rmtree(out_dir)
         os.makedirs(out_dir)
     except KeyboardInterrupt:
