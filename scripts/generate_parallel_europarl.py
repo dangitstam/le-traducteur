@@ -10,9 +10,8 @@ def main():
     """
     A pre-processing step before training Le Traducteur.
     
-    Given the Europarl French and English parallel corpora, constructs a
-    single corpus - a jsonl containing one example per line, where examples
-    consist of a JSON object of the form:
+    Given files from the Europarl parallel corpora, constructs a single corpus - a jsonl containing
+    one example per line, where examples consist of a JSON object of the form:
     {
       "id": Line #,
       <src-language>: <the src utterance>,
