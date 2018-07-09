@@ -1,0 +1,74 @@
+{
+  "dataset_reader": {
+    "type": "europarl_parallel_english_french",
+    "en_tokenizer": {
+      "type": "word",
+      "start_tokens": ["%start@"],
+      "end_tokens": ["%end@"]
+    },
+    "fr_tokenizer": {
+      "type": "word",
+      "start_tokens": ["%start@"],
+      "end_tokens": ["%end@"],
+      "word_splitter": {
+        "language": "fr_core_news_sm"
+      }
+    }
+  },
+  "train_data_path": "europarl_parallel_en_fr/europarl_parallel_en_fr_train.jsonl",
+  "validation_data_path": "europarl_parallel_en_fr/europarl_parallel_en_fr_dev.jsonl",
+  "vocabulary": {
+    "max_vocab_size": { "en": 16000, "fr": 80000 }
+  },
+  "model": {
+    "type": "english_to_french_seq2seq",
+    "en_field_embedder": {
+      "tokens": {
+        "type": "embedding",
+        "embedding_dim": 100,
+        "vocab_namespace": "en"
+      }
+    },
+    "fr_field_embedder": {
+      "tokens": {
+        "type": "embedding",
+        "embedding_dim": 100,
+        "vocab_namespace": "fr"
+      }
+    },
+    "en_encoder": {
+      "type": "lstm",
+      "num_layers": 4,
+      "input_size": 100,
+      "hidden_size": 256
+    },
+    "fr_encoder": {
+      "type": "lstm",
+      "num_layers": 4,
+      "input_size": 100,
+      "hidden_size": 256
+    },
+    "fr_decoder": {
+      "input_dim": 256,
+      "num_layers": 2,
+      "hidden_dims": [500, 10002],
+      "activations": ["relu", "sigmoid"],
+      "dropout": [0.2, 0.0]
+    }
+  },
+  "iterator": {
+    "type": "bucket",
+    "sorting_keys": [["en", "num_tokens"], ["fr", "num_tokens"]],
+    "batch_size": 64
+  },
+
+  "trainer": {
+    "num_epochs": 10,
+    "patience": 10,
+    "cuda_device": -1,
+    "grad_clipping": 1.0,
+    "optimizer": {
+      "type": "adagrad"
+    }
+  }
+}
