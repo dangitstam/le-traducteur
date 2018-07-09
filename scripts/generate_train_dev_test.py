@@ -1,9 +1,9 @@
 import argparse
 import json
 import os
+import random
 import shutil
 import sys
-import random
 
 from tqdm import tqdm
 
