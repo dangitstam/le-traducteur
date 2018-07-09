@@ -15,8 +15,8 @@
       }
     }
   },
-  "train_data_path": "europarl_en_fr.jsonl",
-  "validation_data_path": "europarl_en_fr.jsonl",
+  "train_data_path": "europarl_parallel_en_fr/europarl_parallel_en_fr_train.jsonl",
+  "validation_data_path": "europarl_parallel_en_fr/europarl_parallel_en_fr_dev.jsonl",
   "vocabulary": {
     "max_vocab_size": { "en": 16000, "fr": 80000 }
   },
@@ -65,7 +65,7 @@
   "trainer": {
     "num_epochs": 10,
     "patience": 10,
-    "cuda_device": 1,
+    "cuda_device": -1,
     "grad_clipping": 1.0,
     "optimizer": {
       "type": "adagrad"

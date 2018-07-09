@@ -82,9 +82,17 @@ class EnglishToFrenchEncoderSeq2Seq(Model):
                 en: Dict[str, torch.LongTensor],
                 fr: Dict[str, torch.LongTensor]) -> Dict[str, torch.Tensor]:
         output_dict = {}
+
+        # Reverse the utterance before embedding.
+        en_max_seq_len = en['tokens'].size()[-1]
+        en_revered_indices = torch.linspace(en_max_seq_len - 1, 0, en_max_seq_len).long()
+        en_reversed_utterance = en['tokens'].index_select(-1, en_revered_indices)
+        assert(en['tokens'].equal(en_reversed_utterance.index_select(-1, en_revered_indices)))
+        en['tokens'] = en_reversed_utterance
+
         # Embed and encode the English utterance.
         # Results in a single vector representing the utterance.
-        embedded_en_utterance = self.en_field_embedder(en)  # TODO: Reverse the utterance.
+        embedded_en_utterance = self.en_field_embedder(en)
         en_utterance_mask = util.get_text_field_mask(en)
         encoded_en_utterance = self.en_encoder(embedded_en_utterance, en_utterance_mask)
 
@@ -111,16 +119,17 @@ class EnglishToFrenchEncoderSeq2Seq(Model):
 
         # Logits are likelihoods of each word in the vocabulary being the correct
         # word at that time step.
+        # Shape: (batch_size x fr_max_seq_len x fr_encoder_hidden_size)
         logits = self.fr_decoder(encoded_fr_utterance)
         output_dict["logits"] = logits
 
         # Flatten predictions and compute loss.
-        # Shape(s): Logits - (batch_size x max_sequence_length, fr_vocab)
-        #           Targets - (batch_size x max_sequence_length)
+        # Shape(s): Logits - (batch_size x fr_max_seq_len, fr_vocab_size)
+        #           Targets - (batch_size x fr_max_seq_len)
         batch_size = logits.size(0)
-        max_sequence_length = logits.size(1)
-        logits = logits.view(batch_size * max_sequence_length, -1)
-        targets = fr['tokens'].view(batch_size * max_sequence_length)
+        fr_max_seq_len = logits.size(1)
+        logits = logits.view(batch_size * fr_max_seq_len, -1)
+        targets = fr['tokens'].view(batch_size * fr_max_seq_len)
         output_dict["loss"] = self.loss(logits, targets)
         
         return output_dict
