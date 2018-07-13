@@ -85,9 +85,10 @@ class EnglishToFrenchEncoderSeq2Seq(Model):
 
         # Reverse the utterance before embedding.
         en_max_seq_len = en['tokens'].size()[-1]
-        en_revered_indices = torch.linspace(en_max_seq_len - 1, 0, en_max_seq_len).long()
-        en_reversed_utterance = en['tokens'].index_select(-1, en_revered_indices)
-        assert(en['tokens'].equal(en_reversed_utterance.index_select(-1, en_revered_indices)))
+        en_reversed_indices = torch.linspace(en_max_seq_len - 1, 0, en_max_seq_len).long()
+        en_reversed_indices = en_reversed_indices.to(en['tokens'].device)  # CPU/GPU invariant.
+        en_reversed_utterance = en['tokens'].index_select(-1, en_reversed_indices)
+        assert(en['tokens'].equal(en_reversed_utterance.index_select(-1, en_reversed_indices)))
         en['tokens'] = en_reversed_utterance
 
         # Embed and encode the English utterance.
