@@ -116,6 +116,10 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
         Passed to ``DatasetReader``.  If this is ``True``, training will start sooner, but will
         take longer per batch.  This also allows training with datasets that are too large to fit
         in memory.
+    en_tokenizer : ``Tokenizer``, optional
+        Tokenizer to use to split English utterances into tokens.
+    fr_tokenizer : ``Tokenizer``, optional
+        Tokenizer to use to split French utterances into tokens.
     en_token_indexers : ``Dict[str, TokenIndexer]``, optional
         Indexers used to define English token representations. Defaults to ``{"tokens":
         SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)}``.
@@ -125,6 +129,8 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
     """
     def __init__(self,
                  lazy: bool = False,
+                 en_tokenizer: Tokenizer = None,
+                 fr_tokenizer: Tokenizer = None,
                  en_token_indexers: Dict[str, TokenIndexer] = None,
                  fr_token_indexers: Dict[str, TokenIndexer] = None) -> None:
         super().__init__(lazy)
@@ -163,9 +169,10 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
     @classmethod
     def from_params(cls, params: Params) -> 'EuroparlDatasetReader':
         lazy = params.pop('lazy', False)
+        en_tokenizer = Tokenizer.from_params(params.pop('en_tokenizer', {}))
+        fr_tokenizer = Tokenizer.from_params(params.pop('fr_tokenizer', {}))
         en_token_indexers = TokenIndexer.dict_from_params(params.pop('en_token_indexers', {}))
         fr_token_indexers = TokenIndexer.dict_from_params(params.pop('fr_token_indexers', {}))
         params.assert_empty(cls.__name__)
-        return cls(lazy=lazy, 
-                   en_token_indexers=en_token_indexers,
-                   fr_token_indexers=fr_token_indexers)
+        return cls(lazy=lazy, en_tokenizer=en_tokenizer, en_token_indexers=en_token_indexers,
+                              fr_tokenizer=fr_tokenizer, fr_token_indexers=fr_token_indexers)

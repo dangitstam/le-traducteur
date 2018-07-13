@@ -1,0 +1,78 @@
+{
+    "dataset_reader": {
+      "type": "europarl_parallel_english_french_pretokenized",
+      "en_tokenizer": {
+        "type": "word",
+        "start_tokens": ["%start@"],
+        "end_tokens": ["%end@"],
+        "word_splitter": {
+            "type": "just_spaces"
+        }
+      },
+      "fr_tokenizer": {
+        "type": "word",
+        "start_tokens": ["%start@"],
+        "end_tokens": ["%end@"],
+        "word_splitter": {
+          "type": "just_spaces"
+        }
+      }
+    },
+    "train_data_path": "tests/fixtures/steam_europarl_en_fr_tokenized.jsonl",
+    "validation_data_path": "tests/fixtures/steam_europarl_en_fr_tokenized.jsonl",
+    "vocabulary": {
+      "max_vocab_size": { "en": 10000, "fr": 10000 }
+    },
+    "model": {
+      "type": "english_to_french_seq2seq",
+      "en_field_embedder": {
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 100,
+          "vocab_namespace": "en"
+        }
+      },
+      "fr_field_embedder": {
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 100,
+          "vocab_namespace": "fr"
+        }
+      },
+      "en_encoder": {
+        "type": "rnn",
+        "num_layers": 4,
+        "input_size": 100,
+        "hidden_size": 256
+      },
+      "fr_encoder": {
+        "type": "lstm",
+        "num_layers": 4,
+        "input_size": 100,
+        "hidden_size": 256
+      },
+      "fr_decoder": {
+        "input_dim": 256,
+        "num_layers": 2,
+        "hidden_dims": [500, 10002],
+        "activations": ["relu", "sigmoid"],
+        "dropout": [0.2, 0.0]
+      }
+    },
+    "iterator": {
+      "type": "bucket",
+      "sorting_keys": [["en", "num_tokens"], ["fr", "num_tokens"]],
+      "batch_size": 10
+    },
+  
+    "trainer": {
+      "num_epochs": 25,
+      "patience": 10,
+      "cuda_device": -1,
+      "grad_clipping": 1.0,
+      "optimizer": {
+        "type": "adagrad"
+      }
+    }
+  }
+  
