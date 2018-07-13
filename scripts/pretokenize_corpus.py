@@ -51,8 +51,11 @@ def main():
 
     print("Tokenizing utterances for {}...".format(corpus_name))
     with open(args.corpus_path) as f:
-        for lines in tqdm(grouper(f, 25, '')):
-            examples = [ujson.loads(line.strip()) for line in lines]
+        for lines in tqdm(grouper(f, 100, '')):
+            # When the grouper collects a group smaller than the batch, padding
+            # is done via empty strings.
+            # Check for them explicitly before continuing.
+            examples = [ujson.loads(line.strip()) for line in filter(lambda l: l, lines)]
             en_utterances = [ex['en'] for ex in examples]
             fr_utterances = [ex['fr'] for ex in examples]
 
