@@ -124,18 +124,14 @@ class EnglishToFrenchEncoderSeq2Seq(Model):
 
         # Logits are likelihoods of each word in the vocabulary being the correct
         # word at that time step.
-        # Shape: (batch_size x fr_max_seq_len x fr_encoder_hidden_size)
+        # Shape: (batch_size x fr_max_seq_len x fr_vocab_size)
         logits = self.fr_decoder(encoded_fr_utterance)
         output_dict["logits"] = logits
 
         # Flatten predictions and compute loss.
         # Shape(s): Logits - (batch_size x fr_max_seq_len, fr_vocab_size)
         #           Targets - (batch_size x fr_max_seq_len)
-        batch_size = logits.size(0)
-        fr_max_seq_len = logits.size(1)
-        logits = logits.view(batch_size * fr_max_seq_len, -1)
-        targets = fr['tokens'].view(batch_size * fr_max_seq_len)
-        output_dict["loss"] = self.loss(logits, targets)
+        output_dict["loss"] = util.sequence_cross_entropy_with_logits(logits, fr['tokens'], fr_utterance_mask)
         
         return output_dict
 
