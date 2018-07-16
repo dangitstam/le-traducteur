@@ -109,7 +109,7 @@ class EnglishToFrenchEncoderSeq2Seq(Model):
         assert fr_translation_primer.is_contiguous()
         if self._fr_encoder_is_lstm:
             fr_translation_primer = (fr_translation_primer,
-                                     torch.zeros_like(fr_translation_primer).continugous())
+                                     torch.zeros_like(fr_translation_primer))
 
             assert fr_translation_primer[0].is_contiguous()
             assert fr_translation_primer[1].is_contiguous()
