@@ -64,11 +64,13 @@ class SequenceToSequence(Model):
         if decoder_type not in SequenceToSequence.DECODERS:
             raise ConfigurationError("Unrecognized decoder option '{}'".format(decoder_type))
 
+        # For dealing with input.
         self.source_vocab_size = vocab.get_vocab_size(source_namespace)
         self.target_vocab_size = vocab.get_vocab_size(target_namespace)
         self.source_field_embedder = source_field_embedder or TextFieldEmbedder()
         self.encoder = encoder
 
+        # For dealing with / producing output.
         self.target_vocab_size = vocab.get_vocab_size(target_namespace)
         self.target_embedder = target_embedder
         self.decoder = SequenceToSequence.DECODERS[decoder_type](
@@ -79,24 +81,25 @@ class SequenceToSequence(Model):
                 bias=True,
                 bidirectional=decoder_is_bidirectional
         )
-
         self.output_projection_layer = output_projection_layer
         self.apply_attention = apply_attention
         self.decoder_attention_function = decoder_attention_function or BilinearAttention(
                 matrix_dim=encoder.get_output_dim(),
                 vector_dim=self.decoder.get_output_dim()
         )
-        self.max_decoding_steps = max_decoding_steps
+
+        # Hyperparameters.
+        self._max_decoding_steps = max_decoding_steps
         self._scheduled_sampling_ratio = scheduled_sampling_ratio
 
         # Used for prepping the translation primer (initialization of the target word-level
         # encoder's hidden state).
-        # If the decoder is an LSTM, both hidden state and cell states must be initialized.
+        #
+        # If the decoder is an LSTM, both hidden states and cell states must be initialized.
         # Also, hidden states that prime translation via this encoder must be duplicated
         # across by number of layers they has.
-        self._source_encoder_hidden_size = self.source_encoder._module.hidden_size
-        self._target_decoder_is_lstm = isinstance(self.target_decoder._module, torch.nn.LSTM)
-        self._target_decoder_num_layers = self.target_decoder._module.num_layers
+        self._decoder_is_lstm = isinstance(self.decoder, torch.nn.LSTM)
+        self._decoder_num_layers = self.decoder.num_layers
 
         self._batch_size = None
 
@@ -207,8 +210,9 @@ class SequenceToSequence(Model):
         Required shape: (batch_size, num_target_decoder_layers, source_encoder_hidden_size)
         """
         target_translation_primer = final_encoded_source_output.unsqueeze(0)
+        encoder_hidden_size = final_encoded_source_output.size()[-1]
         target_translation_primer = target_translation_primer.expand(
-                self._target_decoder_num_layers, -1, self._source_encoder_hidden_size).contiguous()
+                self._target_decoder_num_layers, -1, encoder_hidden_size).contiguous()
         assert target_translation_primer.is_contiguous()
         if self._target_decoder_is_lstm:
             target_translation_primer = (target_translation_primer, torch.zeros_like(target_translation_primer))
@@ -225,7 +229,7 @@ class SequenceToSequence(Model):
                                   encoder_outputs_mask: torch.LongTensor) -> torch.LongTensor:
         """
         Prepares the current timestep input for the decoder, embedding the input and applying the
-        default attention (BiLinearAttention).
+        default attention (BiLinearAttention) if attention was enabled.
         """
         # input_indices : (batch_size,)  since we are processing these one timestep at a time.
         # (batch_size, target_embedding_dim)
