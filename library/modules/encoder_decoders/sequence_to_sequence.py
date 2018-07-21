@@ -2,9 +2,8 @@ from typing import Dict, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
-from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
-from allennlp.common.util import START_SYMBOL, END_SYMBOL
+from allennlp.common.util import START_SYMBOL
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
 from allennlp.modules import FeedForward, Seq2SeqEncoder, TextFieldEmbedder

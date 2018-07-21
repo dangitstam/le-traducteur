@@ -2,16 +2,15 @@ from typing import Dict, Optional
 
 import torch
 from allennlp.common import Params
-from allennlp.common.checks import ConfigurationError
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
-from allennlp.modules import (FeedForward, Seq2SeqEncoder, Seq2VecEncoder,
-                              TextFieldEmbedder)
+from allennlp.modules import FeedForward, Seq2VecEncoder, TextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding
-from allennlp.nn import InitializerApplicator, RegularizerApplicator, util
+from allennlp.nn import InitializerApplicator, RegularizerApplicator
 from overrides import overrides
 
 from ..modules.encoder_decoders.sequence_to_sequence import SequenceToSequence
+
 
 @Model.register("english_to_french_seq2seq")
 class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
@@ -27,7 +26,6 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
                  fr_embedder: int,
                  en_encoder: Seq2VecEncoder,
                  fr_decoder_type: str,
-                 fr_decoder_hidden_size,
                  fr_decoder_num_layers,
                  output_projection_layer: FeedForward,
                  initializer: InitializerApplicator = InitializerApplicator(),
@@ -59,7 +57,6 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
         # Seq2Seq that also returns cell states.
         fr_decoder_params = params.pop("fr_decoder").params
         fr_decoder_type = fr_decoder_params['type']
-        fr_decoder_hidden_size = fr_decoder_params['hidden_size']
         fr_decoder_num_layers = fr_decoder_params['num_layers']
         output_projection_layer = FeedForward.from_params(params.pop("output_projection_layer"))
         initializer = InitializerApplicator.from_params(params.pop('initializer', []))
@@ -69,7 +66,6 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
                    fr_embedder=fr_embedder,
                    en_encoder=en_encoder,
                    fr_decoder_type=fr_decoder_type,
-                   fr_decoder_hidden_size=fr_decoder_hidden_size,
                    fr_decoder_num_layers=fr_decoder_num_layers,
                    output_projection_layer=output_projection_layer,
                    initializer=initializer,
