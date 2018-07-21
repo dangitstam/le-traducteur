@@ -249,6 +249,3 @@ class SequenceToSequence(Model):
             return torch.cat((attended_input, embedded_input), -1)
         else:
             return embedded_input
-
-
-# TODO: from_params

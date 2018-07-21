@@ -32,12 +32,10 @@
           "vocab_namespace": "en"
         }
       },
-      "fr_field_embedder": {
-        "tokens": {
-          "type": "embedding",
-          "embedding_dim": 100,
-          "vocab_namespace": "fr"
-        }
+      "fr_embedder": {
+        "num_embeddings": 10000,
+        "vocab_namespace": "fr",
+        "embedding_dim": 100
       },
       "en_encoder": {
         "type": "rnn",
@@ -45,13 +43,13 @@
         "input_size": 100,
         "hidden_size": 256
       },
-      "fr_encoder": {
+      "fr_decoder": {
         "type": "lstm",
         "num_layers": 4,
         "input_size": 100,
         "hidden_size": 256
       },
-      "fr_decoder": {
+      "output_projection_layer": {
         "input_dim": 256,
         "num_layers": 2,
         "hidden_dims": [500, 10002],
@@ -61,7 +59,7 @@
     },
     "iterator": {
       "type": "bucket",
-      "sorting_keys": [["en", "num_tokens"], ["fr", "num_tokens"]],
+      "sorting_keys": [["source", "num_tokens"], ["target", "num_tokens"]],
       "batch_size": 10
     },
   
