@@ -162,7 +162,6 @@ class SequenceToSequence(Model):
             step_predictions.append(predicted_classes.unsqueeze(1))
             last_predictions = predicted_classes
 
-        import pdb; pdb.set_trace()
         logits = torch.cat(step_logits, 1)
         class_probabilities = torch.cat(step_probabilities, 1)
         all_predictions = torch.cat(step_predictions, 1)
