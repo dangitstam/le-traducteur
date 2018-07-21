@@ -85,8 +85,8 @@ class EuroparlEnglishFrenchReader(DatasetReader):
         en_utterance_tokenized = self._en_tokenizer.tokenize(en_utterance)
         fr_utterance_tokenized = self._fr_tokenizer.tokenize(fr_utterance)
         fields = {
-            'en': TextField(en_utterance_tokenized, self._en_token_indexers),
-            'fr': TextField(fr_utterance_tokenized, self._fr_token_indexers)
+            'source': TextField(en_utterance_tokenized, self._en_token_indexers),
+            'target': TextField(fr_utterance_tokenized, self._fr_token_indexers)
         }
         return Instance(fields)
 
@@ -137,10 +137,10 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
         self._en_tokenizer = WordTokenizer(word_splitter=JustSpacesWordSplitter())
         self._fr_tokenizer = WordTokenizer(word_splitter=JustSpacesWordSplitter())
         self._en_token_indexers = en_token_indexers or {
-            "tokens": SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)
+                "tokens": SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)
         }
         self._fr_token_indexers = fr_token_indexers or {
-            "tokens": SingleIdTokenIndexer(namespace="fr", lowercase_tokens=True)
+                "tokens": SingleIdTokenIndexer(namespace="fr", lowercase_tokens=True)
         }
 
     @overrides
@@ -161,8 +161,8 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
         en_utterance_tokenized = self._en_tokenizer.tokenize(en_utterance)
         fr_utterance_tokenized = self._fr_tokenizer.tokenize(fr_utterance)
         fields = {
-            'en': TextField(en_utterance_tokenized, self._en_token_indexers),
-            'fr': TextField(fr_utterance_tokenized, self._fr_token_indexers)
+            'source': TextField(en_utterance_tokenized, self._en_token_indexers),
+            'target': TextField(fr_utterance_tokenized, self._fr_token_indexers)
         }
         return Instance(fields)
 

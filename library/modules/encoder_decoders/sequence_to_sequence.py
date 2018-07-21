@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
+from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
 from allennlp.modules import FeedForward, Seq2SeqEncoder, TextFieldEmbedder
@@ -44,8 +45,8 @@ class SequenceToSequence(Model):
                  decoder_is_bidirectional: bool = False,
                  decoder_num_layers: int = 1,
                  apply_attention: Optional[bool] = False,
-                 max_decoding_steps: int = 0,
-                 scheduled_sampling_ratio: float = 0.0,
+                 max_decoding_steps: int = 100,
+                 scheduled_sampling_ratio: float = 0.4,
 
                  # Logistical.
                  initializer: InitializerApplicator = InitializerApplicator(),
@@ -53,7 +54,7 @@ class SequenceToSequence(Model):
         super().__init__(vocab, regularizer)
         if encoder.get_input_dim() != source_field_embedder.get_output_dim():
             raise ConfigurationError("The input dimension of the encoder must match the embedding"
-                                     "size of the source_embedder. Found {} and {}, respectively."
+                                     "size of the source_field_embedder. Found {} and {}, respectively."
                                      .format(encoder.get_input_dim(),
                                              source_field_embedder.get_output_dim()))
         if output_projection_layer.get_output_dim() != vocab.get_vocab_size("fr"):
@@ -74,7 +75,7 @@ class SequenceToSequence(Model):
         self.target_vocab_size = vocab.get_vocab_size(target_namespace)
         self.target_embedder = target_embedder
         self.decoder = SequenceToSequence.DECODERS[decoder_type](
-                target_embedder.projection_dim,  # Input size.
+                target_embedder.output_dim,  # Input size.
                 encoder.get_output_dim(),  # Hidden size.
                 num_layers=decoder_num_layers,
                 batch_first=True,
@@ -85,7 +86,7 @@ class SequenceToSequence(Model):
         self.apply_attention = apply_attention
         self.decoder_attention_function = decoder_attention_function or BilinearAttention(
                 matrix_dim=encoder.get_output_dim(),
-                vector_dim=self.decoder.get_output_dim()
+                vector_dim=self.decoder.hidden_size
         )
 
         # Hyperparameters.
@@ -99,8 +100,9 @@ class SequenceToSequence(Model):
         # Also, hidden states that prime translation via this encoder must be duplicated
         # across by number of layers they has.
         self._decoder_is_lstm = isinstance(self.decoder, torch.nn.LSTM)
-        self._decoder_num_layers = self.decoder.num_layers
+        self._decoder_num_layers = decoder_num_layers
 
+        self._start_index = vocab.get_token_index(START_SYMBOL, "fr")
         self._batch_size = None
 
         initializer(self)
@@ -113,9 +115,9 @@ class SequenceToSequence(Model):
         source = self.preprocess_input(source)
 
         # Embed and encode the source sequence.
-        source_encoded, final_encoded_source_output = self.encode_input(source)
+        source_encoded = self.encode_input(source)
         source_mask = util.get_text_field_mask(source)
-        batch_size, _, _ = source_encoded.size()
+        batch_size = source_encoded.size(0)
 
         # Determine number of decoding steps. If training or computing validation, we decode
         # target_seq_len times and compute loss.
@@ -130,8 +132,7 @@ class SequenceToSequence(Model):
         # scheduled sampling rate.
         last_predictions = None
         step_logits, step_probabilities, step_predictions = [], [], []
-        decoder_hidden = self.init_decoder_hidden_state(source_encoded,
-                                                        final_encoded_source_output)
+        decoder_hidden = self.init_decoder_hidden_state(source_encoded)
         for timestep in range(num_decoding_steps):
             if self.training and torch.rand(1).item() >= self._scheduled_sampling_ratio:
                 input_choices = target_tokens[:, timestep]
@@ -143,24 +144,25 @@ class SequenceToSequence(Model):
                     input_choices = last_predictions
             decoder_input = self.prepare_decode_step_input(input_choices, decoder_hidden,
                                                            source_encoded, source_mask)
-            if self._target_decoder_is_lstm:
-                decoder_hidden, _ = self.target_decoder(decoder_input,
-                                                        hidden_state=decoder_hidden)
-            else:
-                decoder_hidden, _ = self.target_decoder(decoder_input,
-                                                        hidden_state=decoder_hidden)
+            if len(decoder_input.shape) < 3:
+                decoder_input = decoder_input.unsqueeze(1)
+
+            _, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
 
             # Probability distribution for what the next decoded class should be.
-            output_projection = self.output_projection_layer(decoder_hidden)
+            output_projection = self.output_projection_layer(decoder_hidden[0][-1]
+                                                             if self._decoder_is_lstm
+                                                             else decoder_hidden[-1])
             step_logits.append(output_projection.unsqueeze(1))
 
             # Collect predicted classes and their probabilities.
             class_probabilities = F.softmax(output_projection, dim=-1)
             _, predicted_classes = torch.max(class_probabilities, 1)
             step_probabilities.append(class_probabilities.unsqueeze(1))
-
+            step_predictions.append(predicted_classes.unsqueeze(1))
             last_predictions = predicted_classes
 
+        import pdb; pdb.set_trace()
         logits = torch.cat(step_logits, 1)
         class_probabilities = torch.cat(step_probabilities, 1)
         all_predictions = torch.cat(step_predictions, 1)
@@ -169,7 +171,9 @@ class SequenceToSequence(Model):
                        "predictions": all_predictions}
         if target:
             target_mask = util.get_text_field_mask(target)
-            loss = self._get_loss(logits, target, target_mask)
+            relevant_targets = target['tokens'][:, 1:].contiguous()
+            relevant_mask = target_mask[:, 1:].contiguous()
+            loss = util.sequence_cross_entropy_with_logits(logits, relevant_targets, relevant_mask)
             output_dict["loss"] = loss
 
         return output_dict
@@ -192,31 +196,28 @@ class SequenceToSequence(Model):
         Required shapes: (batch_size, sequence_length, target_decoder_input_size) x
                          (batch_size, target_decoder_input_size)
         """
-        embedded_source_sequence = self.source_embedder(source)
+        embedded_source_sequence = self.source_field_embedder(source)
         source_sequence_mask = util.get_text_field_mask(source)
-        encoded_source_sequence = self.source_encoder(embedded_source_sequence, source_sequence_mask)
-        final_encoder_output = encoded_source_sequence[:, -1]
+        encoded_source_sequence = self.encoder(embedded_source_sequence, source_sequence_mask)
+        return encoded_source_sequence
 
-        return encoded_source_sequence, final_encoder_output
-
-    def init_decoder_hidden_state(self, encoded_source_sequence: torch.FloatTensor,
-                                  final_encoded_source_output: torch.FloatTensor) -> torch.FloatTensor:
+    def init_decoder_hidden_state(self, source_encoded: torch.FloatTensor) -> torch.FloatTensor:
         """
         Prep the hidden state initialization of the word-level Target decoder any way
         you like.
 
         By default, uses only the final hidden state of the encoded source.
 
-        Required shape: (batch_size, num_target_decoder_layers, source_encoder_hidden_size)
+        Required shape: (batch_size, num_decoder_layers, encoder_hidden_size)
         """
-        target_translation_primer = final_encoded_source_output.unsqueeze(0)
-        encoder_hidden_size = final_encoded_source_output.size()[-1]
+        target_translation_primer = source_encoded.unsqueeze(0)
+        encoder_hidden_size = source_encoded.size()[-1]
         target_translation_primer = target_translation_primer.expand(
-                self._target_decoder_num_layers, -1, encoder_hidden_size).contiguous()
+                self._decoder_num_layers, -1, encoder_hidden_size).contiguous()
         assert target_translation_primer.is_contiguous()
-        if self._target_decoder_is_lstm:
-            target_translation_primer = (target_translation_primer, torch.zeros_like(target_translation_primer))
-
+        if self._decoder_is_lstm:
+            target_translation_primer = (target_translation_primer,
+                                         torch.zeros_like(target_translation_primer))
             assert target_translation_primer[0].is_contiguous()
             assert target_translation_primer[1].is_contiguous()
 
@@ -248,3 +249,6 @@ class SequenceToSequence(Model):
             return torch.cat((attended_input, embedded_input), -1)
         else:
             return embedded_input
+
+
+# TODO: from_params
