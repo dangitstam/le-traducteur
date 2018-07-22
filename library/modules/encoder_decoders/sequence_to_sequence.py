@@ -17,6 +17,8 @@ from overrides import overrides
 #
 # but offers more flexibility. Maybe I'll subclass this module when they've addressed their TODOs.
 
+# TODO: Add more asserts so people don't do dumb shit
+
 
 @Model.register("sequence_to_sequence")
 class SequenceToSequence(Model):
@@ -73,8 +75,11 @@ class SequenceToSequence(Model):
         # For dealing with / producing output.
         self.target_vocab_size = vocab.get_vocab_size(target_namespace)
         self.target_embedder = target_embedder
+        decoder_input_size = target_embedder.output_dim
+        if apply_attention:
+            decoder_input_size += encoder.get_output_dim()
         self.decoder = SequenceToSequence.DECODERS[decoder_type](
-                target_embedder.output_dim,  # Input size.
+                decoder_input_size,  # Input size.
                 encoder.get_output_dim(),  # Hidden size.
                 num_layers=decoder_num_layers,
                 batch_first=True,
@@ -85,7 +90,7 @@ class SequenceToSequence(Model):
         self.apply_attention = apply_attention
         self.decoder_attention_function = decoder_attention_function or BilinearAttention(
                 matrix_dim=encoder.get_output_dim(),
-                vector_dim=self.decoder.hidden_size
+                vector_dim=encoder.get_output_dim()
         )
 
         # Hyperparameters.
@@ -114,7 +119,8 @@ class SequenceToSequence(Model):
         source = self.preprocess_input(source)
 
         # Embed and encode the source sequence.
-        source_encoded = self.encode_input(source)
+        source_sequence_encoded = self.encode_input(source)
+        source_encoded = source_sequence_encoded[:, -1]
         source_mask = util.get_text_field_mask(source)
         batch_size = source_encoded.size(0)
 
@@ -142,7 +148,7 @@ class SequenceToSequence(Model):
                 else:
                     input_choices = last_predictions
             decoder_input = self.prepare_decode_step_input(input_choices, decoder_hidden,
-                                                           source_encoded, source_mask)
+                                                           source_sequence_encoded, source_mask)
             if len(decoder_input.shape) < 3:
                 decoder_input = decoder_input.unsqueeze(1)
 
@@ -223,7 +229,7 @@ class SequenceToSequence(Model):
 
     def prepare_decode_step_input(self,
                                   input_indices: torch.LongTensor,
-                                  decoder_hidden_state: torch.LongTensor,
+                                  decoder_hidden: torch.LongTensor,
                                   encoder_outputs: torch.LongTensor,
                                   encoder_outputs_mask: torch.LongTensor) -> torch.LongTensor:
         """
@@ -234,12 +240,14 @@ class SequenceToSequence(Model):
         # (batch_size, target_embedding_dim)
         embedded_input = self.target_embedder(input_indices)
         if self.apply_attention:
+            if isinstance(decoder_hidden, tuple):
+                decoder_hidden = decoder_hidden[0]
             # encoder_outputs : (batch_size, input_sequence_length, encoder_output_dim)
             # Ensuring mask is also a FloatTensor. Or else the multiplication within attention will
             # complain.
             encoder_outputs_mask = encoder_outputs_mask.float()
             # (batch_size, input_sequence_length)
-            input_weights = self.decoder_attention_function(decoder_hidden_state, encoder_outputs,
+            input_weights = self.decoder_attention_function(decoder_hidden[-1], encoder_outputs,
                                                             encoder_outputs_mask)
             # (batch_size, encoder_output_dim)
             attended_input = util.weighted_sum(encoder_outputs, input_weights)

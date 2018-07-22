@@ -9,6 +9,7 @@
     },
     "model": {
       "type": "english_to_french_seq2seq",
+      "apply_attention": true,
       "en_field_embedder": {
         "tokens": {
           "type": "embedding",
@@ -29,8 +30,7 @@
       },
       "fr_decoder": {
         "type": "lstm",
-        "num_layers": 4,
-        "input_size": 100
+        "num_layers": 4
       },
       "output_projection_layer": {
         "input_dim": 256,
