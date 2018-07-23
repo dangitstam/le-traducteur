@@ -43,12 +43,21 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
         """
         Reverse the English utterance before encoding it.
         """
-        import pdb; pdb.set_trace()
         source_max_len = source['tokens'].size()[-1]
         source_revered_indices = torch.linspace(source_max_len - 1, 0, source_max_len).long()
         source_revered_indices = source_revered_indices.to(source['tokens'].device)  # CPU/GPU invariant.
         source_reversed_tokens = source['tokens'].index_select(-1, source_revered_indices)
         assert source['tokens'].equal(source_reversed_tokens.index_select(-1, source_revered_indices))
+
+        # Padding has been shoved to the front as a result of reversing.
+        # We have to move it to the back.
+        padding_length = source["tokens"].size(-1)
+        for i, example in enumerate(source_reversed_tokens):
+            example = example[example.nonzero()].squeeze()
+            padding = torch.LongTensor([0] * (padding_length - len(example)))
+            example = torch.cat(((example, padding)), 0)
+            source_reversed_tokens[i] = example
+
         source['tokens'] = source_reversed_tokens
         return source
 
