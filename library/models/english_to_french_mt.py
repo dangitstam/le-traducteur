@@ -11,6 +11,8 @@ from overrides import overrides
 
 from ..modules.encoder_decoders.sequence_to_sequence import SequenceToSequence
 
+# TODO: Make this more generalized. When generalized, others can subclass this without having
+# to write the from_param's function.
 
 @Model.register("english_to_french_seq2seq")
 class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):

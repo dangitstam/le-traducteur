@@ -1,9 +1,10 @@
 from typing import Dict, Optional, Tuple
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from allennlp.common.checks import ConfigurationError
-from allennlp.common.util import START_SYMBOL
+from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
 from allennlp.modules import FeedForward, Seq2SeqEncoder, TextFieldEmbedder
@@ -18,6 +19,7 @@ from overrides import overrides
 # but offers more flexibility. Maybe I'll subclass this module when they've addressed their TODOs.
 
 # TODO: Add more asserts so people don't do dumb shit
+# TODO: Better docstrings.
 
 
 @Model.register("sequence_to_sequence")
@@ -75,12 +77,21 @@ class SequenceToSequence(Model):
         # For dealing with / producing output.
         self.target_vocab_size = vocab.get_vocab_size(target_namespace)
         self.target_embedder = target_embedder
+
+        # Input size will either be the target embedding size or the target embedding size plus the
+        # encoder hidden size to attend on the input.
+        #
+        # When making a custom attention function that uses neither of those input sizes, you will
+        # have to define the decoder yourself.
         decoder_input_size = target_embedder.output_dim
         if apply_attention:
             decoder_input_size += encoder.get_output_dim()
+
+        # Hidden size of the encoder and decoder should match.
+        decoder_hidden_size = encoder.get_output_dim()
         self.decoder = SequenceToSequence.DECODERS[decoder_type](
-                decoder_input_size,  # Input size.
-                encoder.get_output_dim(),  # Hidden size.
+                decoder_input_size,
+                decoder_hidden_size,
                 num_layers=decoder_num_layers,
                 batch_first=True,
                 bias=True,
@@ -106,7 +117,10 @@ class SequenceToSequence(Model):
         self._decoder_is_lstm = isinstance(self.decoder, torch.nn.LSTM)
         self._decoder_num_layers = decoder_num_layers
 
-        self._start_index = vocab.get_token_index(START_SYMBOL, "fr")
+        self._start_index = vocab.get_token_index(START_SYMBOL, target_namespace)
+        self._end_index = vocab.get_token_index(END_SYMBOL, target_namespace)
+        self._source_namespace = source_namespace
+        self._target_namespace = target_namespace
         self._batch_size = None
 
         initializer(self)
@@ -115,6 +129,7 @@ class SequenceToSequence(Model):
     def forward(self,
                 source: Dict[str, torch.LongTensor],
                 target: Dict[str, torch.LongTensor]) -> Dict[str, torch.Tensor]:
+        # pylint: disable=arguments-differ
         output_dict: dict = {}
         source = self.preprocess_input(source)
 
@@ -128,7 +143,7 @@ class SequenceToSequence(Model):
         # target_seq_len times and compute loss.
         if target:
             target_tokens = target['tokens']
-            target_seq_len = target['tokens'].size()[1]
+            target_seq_len = target['tokens'].size(1)
             num_decoding_steps = target_seq_len - 1
         else:
             num_decoding_steps = self.max_decoding_steps
@@ -187,6 +202,7 @@ class SequenceToSequence(Model):
         Perform any preprocessing on the input text field you like; returns the source unchanged
         by default.
         """
+        # pylint: disable=R0201
         return source
 
     def encode_input(self, source: Dict[str, torch.LongTensor]) -> Tuple[torch.FloatTensor,
@@ -196,16 +212,17 @@ class SequenceToSequence(Model):
         tensors.
 
         By default, embeds the source utterance and feeds it to the source encoder.
+        Note that when subclassing this module, the decoder_hidden_size should be the same as
+        the encoder's hidden size.
 
-        Required shapes: (batch_size, sequence_length, target_decoder_input_size) x
-                         (batch_size, target_decoder_input_size)
+        Required shapes: (batch_size, sequence_length, decoder_hidden_size)
         """
-        embedded_source_sequence = self.source_field_embedder(source)
+        source_sequence_embedded = self.source_field_embedder(source)
         source_sequence_mask = util.get_text_field_mask(source)
-        encoded_source_sequence = self.encoder(embedded_source_sequence, source_sequence_mask)
+        encoded_source_sequence = self.encoder(source_sequence_embedded, source_sequence_mask)
         return encoded_source_sequence
 
-    def init_decoder_hidden_state(self, source_encoded: torch.FloatTensor) -> torch.FloatTensor:
+    def init_decoder_hidden_state(self, source_sequence_encoded: torch.FloatTensor) -> torch.FloatTensor:
         """
         Prep the hidden state initialization of the word-level Target decoder any way
         you like.
@@ -214,18 +231,16 @@ class SequenceToSequence(Model):
 
         Required shape: (batch_size, num_decoder_layers, encoder_hidden_size)
         """
-        target_translation_primer = source_encoded.unsqueeze(0)
-        encoder_hidden_size = source_encoded.size()[-1]
-        target_translation_primer = target_translation_primer.expand(
-                self._decoder_num_layers, -1, encoder_hidden_size).contiguous()
-        assert target_translation_primer.is_contiguous()
-        if self._decoder_is_lstm:
-            target_translation_primer = (target_translation_primer,
-                                         torch.zeros_like(target_translation_primer))
-            assert target_translation_primer[0].is_contiguous()
-            assert target_translation_primer[1].is_contiguous()
+        decoder_primer = source_sequence_encoded.unsqueeze(0)
+        decoder_primer = decoder_primer.expand(
+                self._decoder_num_layers, -1, self.encoder.get_output_dim()
+        ).contiguous()
 
-        return target_translation_primer
+        # If the decoder is an LSTM, we need to initialize a cell state.
+        if self._decoder_is_lstm:
+            decoder_primer = (decoder_primer, torch.zeros_like(decoder_primer))
+
+        return decoder_primer
 
     def prepare_decode_step_input(self,
                                   input_indices: torch.LongTensor,
@@ -233,8 +248,23 @@ class SequenceToSequence(Model):
                                   encoder_outputs: torch.LongTensor,
                                   encoder_outputs_mask: torch.LongTensor) -> torch.LongTensor:
         """
-        Prepares the current timestep input for the decoder, embedding the input and applying the
-        default attention (BiLinearAttention) if attention was enabled.
+        Prepares the current timestep input for the decoder.
+
+        By default, simply embeds and returns the input. If using attention, the default attention
+        (BiLinearAttention) is applied to attend on the step input given the encoded source
+        sequence and the previous hidden state.
+
+        Parameters:
+        -----------
+        input_indices : torch.LongTensor
+            Indices of either the gold inputs to the decoder or the predicted labels from the
+            previous timestep.
+        decoder_hidden : torch.LongTensor, optional (not needed if no attention)
+            Output from the decoder at the last time step. Needed only if using attention.
+        encoder_outputs : torch.LongTensor, optional (not needed if no attention)
+            Encoder outputs from all time steps. Needed only if using attention.
+        encoder_outputs_mask : torch.LongTensor, optional (not needed if no attention)
+            Masks on encoder outputs. Needed only if using attention.
         """
         # input_indices : (batch_size,)  since we are processing these one timestep at a time.
         # (batch_size, target_embedding_dim)
@@ -255,3 +285,20 @@ class SequenceToSequence(Model):
             return torch.cat((attended_input, embedded_input), -1)
         else:
             return embedded_input
+
+    @overrides
+    def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        predicted_indices = output_dict["predictions"]
+        if not isinstance(predicted_indices, np.ndarray):
+            predicted_indices = predicted_indices.detach().cpu().numpy()
+        all_predicted_tokens = []
+        for indices in predicted_indices:
+            indices = list(indices)
+            # Collect indices till the first END_SYMBOL.
+            if self._end_index in indices:
+                indices = indices[:indices.index(self._end_index)]
+            predicted_tokens = [self.vocab.get_token_from_index(x, namespace=self._target_namespace)
+                                for x in indices]
+            all_predicted_tokens.append(predicted_tokens)
+        output_dict["predicted_tokens"] = all_predicted_tokens
+        return output_dict
