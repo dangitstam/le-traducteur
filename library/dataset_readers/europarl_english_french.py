@@ -56,10 +56,15 @@ class EuroparlEnglishFrenchReader(DatasetReader):
                  en_token_indexers: Dict[str, TokenIndexer] = None,
                  fr_token_indexers: Dict[str, TokenIndexer] = None) -> None:
         super().__init__(lazy)
-        self._en_tokenizer = en_tokenizer or WordTokenizer()
+        self._en_tokenizer = en_tokenizer or WordTokenizer(
+                start_tokens=[START_SYMBOL],
+                end_tokens=[END_SYMBOL]
+        )
         self._fr_tokenizer = fr_tokenizer or WordTokenizer(
                 # Specify spaCy's French model instead (English is the default).
-                word_splitter=SpacyWordSplitter(language='fr_core_news_sm')
+                word_splitter=SpacyWordSplitter(language='fr_core_news_sm'),
+                start_tokens=[START_SYMBOL],
+                end_tokens=[END_SYMBOL]
         )
         self._en_token_indexers = en_token_indexers or {
                 "tokens": SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)
@@ -83,6 +88,7 @@ class EuroparlEnglishFrenchReader(DatasetReader):
 
     @overrides
     def text_to_instance(self, en_utterance: str, fr_utterance: str) -> Instance:  # type: ignore
+        # pylint: disable=arguments-differ
         en_utterance_tokenized = self._en_tokenizer.tokenize(en_utterance)
         fr_utterance_tokenized = self._fr_tokenizer.tokenize(fr_utterance)
         fields = {
@@ -133,15 +139,21 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
     """
     def __init__(self,
                  lazy: bool = False,
+                 en_tokenizer: Tokenizer = None,
+                 fr_tokenizer: Tokenizer = None,
                  en_token_indexers: Dict[str, TokenIndexer] = None,
                  fr_token_indexers: Dict[str, TokenIndexer] = None) -> None:
         super().__init__(lazy)
-        self._en_tokenizer = WordTokenizer(
+        self._en_tokenizer = en_tokenizer or WordTokenizer(
                 word_splitter=JustSpacesWordSplitter(),
                 start_tokens=[START_SYMBOL],
                 end_tokens=[END_SYMBOL]
         )
-        self._fr_tokenizer = WordTokenizer(word_splitter=JustSpacesWordSplitter())
+        self._fr_tokenizer = fr_tokenizer or WordTokenizer(
+                word_splitter=JustSpacesWordSplitter(),
+                start_tokens=[START_SYMBOL],
+                end_tokens=[END_SYMBOL]
+        )
         self._en_token_indexers = en_token_indexers or {
                 "tokens": SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)
         }
@@ -164,6 +176,7 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
 
     @overrides
     def text_to_instance(self, en_utterance: str, fr_utterance: str) -> Instance:  # type: ignore
+        # pylint: disable=arguments-differ
         en_utterance_tokenized = self._en_tokenizer.tokenize(en_utterance)
         fr_utterance_tokenized = self._fr_tokenizer.tokenize(fr_utterance)
         fields = {
@@ -175,7 +188,10 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
     @classmethod
     def from_params(cls, params: Params) -> 'EuroparlDatasetReader':
         lazy = params.pop('lazy', False)
+        en_tokenizer = Tokenizer.from_params(params.pop('en_tokenizer', {}))
+        fr_tokenizer = Tokenizer.from_params(params.pop('fr_tokenizer', {}))
         en_token_indexers = TokenIndexer.dict_from_params(params.pop('en_token_indexers', {}))
         fr_token_indexers = TokenIndexer.dict_from_params(params.pop('fr_token_indexers', {}))
         params.assert_empty(cls.__name__)
-        return cls(lazy=lazy, en_token_indexers=en_token_indexers, fr_token_indexers=fr_token_indexers)
+        return cls(lazy=lazy, en_tokenizer=en_tokenizer, en_token_indexers=en_token_indexers,
+                              fr_tokenizer=fr_tokenizer, fr_token_indexers=fr_token_indexers)

@@ -117,6 +117,7 @@ class SequenceToSequence(Model):
         self._decoder_is_lstm = isinstance(self.decoder, torch.nn.LSTM)
         self._decoder_num_layers = decoder_num_layers
 
+        import pdb; pdb.set_trace()
         self._start_index = vocab.get_token_index(START_SYMBOL, target_namespace)
         self._end_index = vocab.get_token_index(END_SYMBOL, target_namespace)
         self._source_namespace = source_namespace

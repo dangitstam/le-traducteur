@@ -43,6 +43,7 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
         """
         Reverse the English utterance before encoding it.
         """
+        import pdb; pdb.set_trace()
         source_max_len = source['tokens'].size()[-1]
         source_revered_indices = torch.linspace(source_max_len - 1, 0, source_max_len).long()
         source_revered_indices = source_revered_indices.to(source['tokens'].device)  # CPU/GPU invariant.

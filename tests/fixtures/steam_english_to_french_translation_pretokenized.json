@@ -1,6 +1,22 @@
 {
     "dataset_reader": {
-      "type": "europarl_parallel_english_french_pretokenized"
+      "type": "europarl_parallel_english_french_pretokenized",
+      "en_tokenizer": {
+        "type": "word",
+        "start_tokens": ["@start@"],
+        "end_tokens": ["@end@"],
+        "word_splitter": {
+            "type": "just_spaces"
+        }
+      },
+      "fr_tokenizer": {
+        "type": "word",
+        "start_tokens": ["@start@"],
+        "end_tokens": ["@end@"],
+        "word_splitter": {
+          "type": "just_spaces"
+        }
+      }
     },
     "train_data_path": "tests/fixtures/steam_europarl_en_fr_tokenized.jsonl",
     "validation_data_path": "tests/fixtures/steam_europarl_en_fr_tokenized.jsonl",

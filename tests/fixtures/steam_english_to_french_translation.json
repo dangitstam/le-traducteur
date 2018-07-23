@@ -3,13 +3,13 @@
     "type": "europarl_parallel_english_french",
     "en_tokenizer": {
       "type": "word",
-      "start_tokens": ["%start@"],
-      "end_tokens": ["%end@"]
+      "start_tokens": ["@start@"],
+      "end_tokens": ["@end@"]
     },
     "fr_tokenizer": {
       "type": "word",
-      "start_tokens": ["%start@"],
-      "end_tokens": ["%end@"],
+      "start_tokens": ["@start@"],
+      "end_tokens": ["@end@"],
       "word_splitter": {
         "language": "fr_core_news_sm"
       }
