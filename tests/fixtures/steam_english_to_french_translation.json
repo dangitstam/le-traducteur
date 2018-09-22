@@ -43,15 +43,16 @@
     }
   },
   "iterator": {
-    "type": "basic",
-    "batch_size": 64
+    "type": "bucket",
+    "sorting_keys": [["en", "num_tokens"], ["fr", "num_tokens"]],
+    "batch_size": 10
   },
 
   "trainer": {
-    "num_epochs": 1000,
+    "num_epochs": 25,
     "patience": 10,
     "cuda_device": -1,
-    "grad_clipping": 5.0,
+    "grad_clipping": 1.0,
     "optimizer": {
       "type": "adagrad"
     }

@@ -166,7 +166,7 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
         en_utterance_tokenized = self._en_tokenizer.tokenize(en_utterance)
         fr_utterance_tokenized = self._fr_tokenizer.tokenize(fr_utterance)
         fields = {
-                'source': TextField(en_utterance_tokenized, self._en_token_indexers),
-                'target': TextField(fr_utterance_tokenized, self._fr_token_indexers)
+            'source': TextField(en_utterance_tokenized, self._en_token_indexers),
+            'target': TextField(fr_utterance_tokenized, self._fr_token_indexers)
         }
         return Instance(fields)
