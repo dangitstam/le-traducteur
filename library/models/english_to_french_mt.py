@@ -54,8 +54,16 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
         padding_length = source["tokens"].size(-1)
         for i, example in enumerate(source_reversed_tokens):
             example = example[example.nonzero()].squeeze()
-            padding = torch.LongTensor([0] * (padding_length - len(example)))
-            example = torch.cat(((example, padding)), 0)
+
+            # Some utterances are as short as one word. In this case, squeezing
+            # results in a zero-dimeisional tensor.
+            if example.dim() == 0:
+                padding = torch.LongTensor([0] * (padding_length - 1))
+                example = torch.cat((example.unsqueeze(0), padding), 0)
+            else:
+                padding = torch.LongTensor([0] * (padding_length - len(example)))
+                example = torch.cat((example, padding), 0)
+
             source_reversed_tokens[i] = example
 
         source['tokens'] = source_reversed_tokens
