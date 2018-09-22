@@ -97,20 +97,6 @@ class EuroparlEnglishFrenchReader(DatasetReader):
         }
         return Instance(fields)
 
-    @classmethod
-    def from_params(cls, params: Params) -> 'EuroparlDatasetReader':
-        lazy = params.pop('lazy', False)
-        en_tokenizer = Tokenizer.from_params(params.pop('en_tokenizer', {}))
-        fr_tokenizer = Tokenizer.from_params(params.pop('fr_tokenizer', {}))
-        en_token_indexers = TokenIndexer.dict_from_params(params.pop('en_token_indexers', {}))
-        fr_token_indexers = TokenIndexer.dict_from_params(params.pop('fr_token_indexers', {}))
-        params.assert_empty(cls.__name__)
-        return cls(lazy=lazy,
-                   en_tokenizer=en_tokenizer,
-                   en_token_indexers=en_token_indexers,
-                   fr_tokenizer=fr_tokenizer,
-                   fr_token_indexers=fr_token_indexers)
-
 @DatasetReader.register("europarl_parallel_english_french_pretokenized")
 class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
     """
@@ -184,14 +170,3 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
                 'target': TextField(fr_utterance_tokenized, self._fr_token_indexers)
         }
         return Instance(fields)
-
-    @classmethod
-    def from_params(cls, params: Params) -> 'EuroparlDatasetReader':
-        lazy = params.pop('lazy', False)
-        en_tokenizer = Tokenizer.from_params(params.pop('en_tokenizer', {}))
-        fr_tokenizer = Tokenizer.from_params(params.pop('fr_tokenizer', {}))
-        en_token_indexers = TokenIndexer.dict_from_params(params.pop('en_token_indexers', {}))
-        fr_token_indexers = TokenIndexer.dict_from_params(params.pop('fr_token_indexers', {}))
-        params.assert_empty(cls.__name__)
-        return cls(lazy=lazy, en_tokenizer=en_tokenizer, en_token_indexers=en_token_indexers,
-                              fr_tokenizer=fr_tokenizer, fr_token_indexers=fr_token_indexers)

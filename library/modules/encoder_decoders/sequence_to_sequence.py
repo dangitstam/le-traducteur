@@ -36,7 +36,7 @@ class SequenceToSequence(Model):
 
                  # Embeddings.
                  source_field_embedder: TextFieldEmbedder,
-                 target_embedder: Embedding,
+                 target_embedding_size: int,
 
                  # Encoders and Decoders.
                  encoder: Seq2SeqEncoder,
@@ -76,32 +76,32 @@ class SequenceToSequence(Model):
 
         # For dealing with / producing output.
         self.target_vocab_size = vocab.get_vocab_size(target_namespace)
-        self.target_embedder = target_embedder
+        self.target_embedder = Embedding(self.target_vocab_size, target_embedding_size)
 
         # Input size will either be the target embedding size or the target embedding size plus the
         # encoder hidden size to attend on the input.
         #
         # When making a custom attention function that uses neither of those input sizes, you will
         # have to define the decoder yourself.
-        decoder_input_size = target_embedder.output_dim
+        decoder_input_size = target_embedding_size
         if apply_attention:
             decoder_input_size += encoder.get_output_dim()
 
         # Hidden size of the encoder and decoder should match.
         decoder_hidden_size = encoder.get_output_dim()
         self.decoder = SequenceToSequence.DECODERS[decoder_type](
-                decoder_input_size,
-                decoder_hidden_size,
-                num_layers=decoder_num_layers,
-                batch_first=True,
-                bias=True,
-                bidirectional=decoder_is_bidirectional
+            decoder_input_size,
+            decoder_hidden_size,
+            num_layers=decoder_num_layers,
+            batch_first=True,
+            bias=True,
+            bidirectional=decoder_is_bidirectional
         )
         self.output_projection_layer = output_projection_layer
         self.apply_attention = apply_attention
         self.decoder_attention_function = decoder_attention_function or BilinearAttention(
-                matrix_dim=encoder.get_output_dim(),
-                vector_dim=encoder.get_output_dim()
+            matrix_dim=encoder.get_output_dim(),
+            vector_dim=encoder.get_output_dim()
         )
 
         # Hyperparameters.
@@ -135,8 +135,12 @@ class SequenceToSequence(Model):
 
         # Embed and encode the source sequence.
         source_sequence_encoded = self.encode_input(source)
-        source_encoded = source_sequence_encoded[:, -1]
         source_mask = util.get_text_field_mask(source)
+        source_lengths = source_mask.sum(dim=-1)
+        source_encoded = torch.zeros_like(source_sequence_encoded[:, 0])
+        for i, length in enumerate(source_lengths):
+            source_encoded[i] = source_sequence_encoded[i, length - 1]
+
         batch_size = source_encoded.size(0)
 
         # Determine number of decoding steps. If training or computing validation, we decode

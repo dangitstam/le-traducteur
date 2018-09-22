@@ -25,7 +25,7 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
     def __init__(self,
                  vocab: Vocabulary,
                  en_field_embedder: TextFieldEmbedder,
-                 fr_embedder: int,
+                 fr_field_embedding_size: int,
                  en_encoder: Seq2SeqEncoder,
                  fr_decoder_type: str,
                  fr_decoder_num_layers,
@@ -33,7 +33,7 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
                  apply_attention: bool = False,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
-        super().__init__(vocab, "en", "fr", en_field_embedder, fr_embedder,
+        super().__init__(vocab, "en", "fr", en_field_embedder, fr_field_embedding_size,
                          en_encoder, fr_decoder_type, output_projection_layer,
                          apply_attention=apply_attention,
                          decoder_num_layers=fr_decoder_num_layers)
@@ -60,29 +60,3 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
 
         source['tokens'] = source_reversed_tokens
         return source
-
-    @classmethod
-    def from_params(cls, vocab: Vocabulary, params: Params) -> 'EnglishToFrenchEncoderSeq2Seq':
-        en_field_embedder = TextFieldEmbedder.from_params(vocab, params.pop("en_field_embedder"))
-        en_encoder = Seq2SeqEncoder.from_params(params.pop("en_encoder"))
-        fr_embedder = Embedding.from_params(vocab, params.pop("fr_embedder"))
-
-        # Unwrap the decoder parameters. They need to be fed to the model since there's no
-        # Seq2Seq that also returns cell states.
-        fr_decoder_params = params.pop("fr_decoder").params
-        fr_decoder_type = fr_decoder_params['type']
-        fr_decoder_num_layers = fr_decoder_params['num_layers']
-        apply_attention = params.pop("apply_attention", False)
-        output_projection_layer = FeedForward.from_params(params.pop("output_projection_layer"))
-        initializer = InitializerApplicator.from_params(params.pop('initializer', []))
-        regularizer = RegularizerApplicator.from_params(params.pop('regularizer', []))
-        return cls(vocab=vocab,
-                   en_field_embedder=en_field_embedder,
-                   fr_embedder=fr_embedder,
-                   en_encoder=en_encoder,
-                   fr_decoder_type=fr_decoder_type,
-                   fr_decoder_num_layers=fr_decoder_num_layers,
-                   output_projection_layer=output_projection_layer,
-                   apply_attention=apply_attention,
-                   initializer=initializer,
-                   regularizer=regularizer)

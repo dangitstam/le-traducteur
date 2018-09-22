@@ -1,6 +1,6 @@
 {
   "dataset_reader": {
-    "type": "europarl_combined_french_english",
+    "type": "europarl_parallel_english_french",
     "en_tokenizer": {
       "type": "word"
     },
@@ -17,7 +17,7 @@
     "max_vocab_size": 100
   },
   "model": {
-    "type": "english_to_french",
+    "type": "english_to_french_seq2seq",
     "en_field_embedder": {
       "tokens": {
         "type": "embedding",
@@ -26,29 +26,19 @@
         "vocab_namespace": "en"
       }
     },
-    "fr_field_embedder": {
-      "tokens": {
-        "type": "embedding",
-        "embedding_dim": 100,
-        "trainable": false,
-        "vocab_namespace": "fr"
-      }
-    },
+    "fr_field_embedding_size": 100,
     "en_encoder": {
       "type": "rnn",
       "input_size": 100,
-      "hidden_size": 100
+      "hidden_size": 128
     },
-    "fr_encoder": {
-      "type": "rnn",
-      "input_size": 100,
-      "hidden_size": 100
-    },
-    "fr_decoder": {
-      "input_dim": 100,
+    "fr_decoder_type": "rnn",
+    "fr_decoder_num_layers": 2,
+    "output_projection_layer": {
+      "input_dim": 128,
       "num_layers": 2,
-      "hidden_dims": [50, 102],
-      "activations": ["sigmoid", "linear"],
+      "hidden_dims": [500, 102],
+      "activations": ["relu", "sigmoid"],
       "dropout": [0.2, 0.0]
     }
   },
