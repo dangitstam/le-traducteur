@@ -44,7 +44,7 @@
   },
   "iterator": {
     "type": "bucket",
-    "sorting_keys": [["en", "num_tokens"], ["fr", "num_tokens"]],
+    "sorting_keys": [["source", "num_tokens"], ["target", "num_tokens"]],
     "batch_size": 10
   },
 
