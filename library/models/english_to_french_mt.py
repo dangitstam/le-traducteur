@@ -43,6 +43,7 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
         """
         Reverse the English utterance before encoding it.
         """
+        device = source['tokens'].device  # For moving tensors to the GPU.
         source_max_len = source['tokens'].size()[-1]
         source_revered_indices = torch.linspace(source_max_len - 1, 0, source_max_len).long()
         source_revered_indices = source_revered_indices.to(source['tokens'].device)  # CPU/GPU invariant.
@@ -58,10 +59,10 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
             # Some utterances are as short as one word. In this case, squeezing
             # results in a zero-dimeisional tensor.
             if example.dim() == 0:
-                padding = torch.LongTensor([0] * (padding_length - 1))
+                padding = torch.LongTensor([0] * (padding_length - 1)).to(device=device)
                 example = torch.cat((example.unsqueeze(0), padding), 0)
             else:
-                padding = torch.LongTensor([0] * (padding_length - len(example)))
+                padding = torch.LongTensor([0] * (padding_length - len(example))).to(device=device)
                 example = torch.cat((example, padding), 0)
 
             source_reversed_tokens[i] = example

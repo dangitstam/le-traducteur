@@ -186,7 +186,10 @@ class SequenceToSequence(Model):
             step_predictions.append(predicted_classes.unsqueeze(1))
             last_predictions = predicted_classes
 
-        logits = torch.cat(step_logits, 1)
+        try:
+            logits = torch.cat(step_logits, 1)
+        except:
+            import pdb; pdb.set_trace()
         class_probabilities = torch.cat(step_probabilities, 1)
         all_predictions = torch.cat(step_predictions, 1)
         output_dict = {"logits": logits,

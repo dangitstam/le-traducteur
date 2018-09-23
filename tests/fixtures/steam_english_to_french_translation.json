@@ -2,10 +2,12 @@
   "dataset_reader": {
     "type": "europarl_parallel_english_french",
     "en_tokenizer": {
-      "type": "word"
+      "type": "word",
+      "end_tokens": ["@@END@@"]
     },
     "fr_tokenizer": {
       "type": "word",
+      "end_tokens": ["@@END@@"],
       "word_splitter": {
         "language": "fr_core_news_sm"
       }
@@ -22,39 +24,38 @@
       "tokens": {
         "type": "embedding",
         "embedding_dim": 100,
-        "trainable": false,
         "vocab_namespace": "en"
       }
     },
     "fr_field_embedding_size": 100,
     "en_encoder": {
-      "type": "rnn",
+      "type": "lstm",
       "input_size": 100,
-      "hidden_size": 256
+      "hidden_size": 512
     },
-    "fr_decoder_type": "rnn",
+    "fr_decoder_type": "lstm",
     "fr_decoder_num_layers": 2,
     "output_projection_layer": {
-      "input_dim": 256,
+      "input_dim": 512,
       "num_layers": 2,
-      "hidden_dims": [500, 10002],
+      "hidden_dims": [20000, 10002],
       "activations": ["relu", "sigmoid"],
-      "dropout": [0.2, 0.0]
     }
   },
   "iterator": {
     "type": "bucket",
     "sorting_keys": [["source", "num_tokens"], ["target", "num_tokens"]],
-    "batch_size": 10
+    "batch_size": 32
   },
 
   "trainer": {
     "num_epochs": 25,
     "patience": 10,
-    "cuda_device": -1,
-    "grad_clipping": 1.0,
+    "cuda_device": 0,
+    "grad_clipping": 0.33,
     "optimizer": {
-      "type": "adagrad"
+      "type": "adam",
+      "lr": 0.0001
     }
   }
 }
