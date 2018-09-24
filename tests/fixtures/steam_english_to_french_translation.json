@@ -16,7 +16,10 @@
   "train_data_path": "tests/fixtures/steam_europarl_en_fr.jsonl",
   "validation_data_path": "tests/fixtures/steam_europarl_en_fr.jsonl",
   "vocabulary": {
-    "max_vocab_size": 10000
+    "max_vocab_size": {
+      "source": 10000,
+      "target": 20000
+    }
   },
   "model": {
     "type": "english_to_french_seq2seq",
@@ -24,22 +27,23 @@
       "tokens": {
         "type": "embedding",
         "embedding_dim": 100,
-        "vocab_namespace": "en"
+        "vocab_namespace": "source"
       }
     },
     "fr_field_embedding_size": 100,
     "en_encoder": {
       "type": "lstm",
       "input_size": 100,
-      "hidden_size": 512
+      "hidden_size": 1024,
+      "num_layers": 4
     },
     "fr_decoder_type": "lstm",
-    "fr_decoder_num_layers": 2,
+    "fr_decoder_num_layers": 4,
     "output_projection_layer": {
-      "input_dim": 512,
-      "num_layers": 2,
-      "hidden_dims": [20000, 10002],
-      "activations": ["relu", "sigmoid"],
+      "input_dim": 1024,
+      "num_layers": 1,
+      "hidden_dims": [14461],
+      "activations": ["relu"],
     }
   },
   "iterator": {

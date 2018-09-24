@@ -67,10 +67,10 @@ class EuroparlEnglishFrenchReader(DatasetReader):
                 end_tokens=[END_SYMBOL]
         )
         self._en_token_indexers = en_token_indexers or {
-                "tokens": SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)
+            "tokens": SingleIdTokenIndexer(namespace="source", lowercase_tokens=True)
         }
         self._fr_token_indexers = fr_token_indexers or {
-                "tokens": SingleIdTokenIndexer(namespace="fr", lowercase_tokens=True)
+            "tokens": SingleIdTokenIndexer(namespace="target", lowercase_tokens=True)
         }
 
     @overrides
@@ -141,10 +141,10 @@ class EuroparlEnglishFrenchReaderPretokenized(DatasetReader):
                 end_tokens=[END_SYMBOL]
         )
         self._en_token_indexers = en_token_indexers or {
-                "tokens": SingleIdTokenIndexer(namespace="en", lowercase_tokens=True)
+            "tokens": SingleIdTokenIndexer(namespace="source", lowercase_tokens=True)
         }
         self._fr_token_indexers = fr_token_indexers or {
-                "tokens": SingleIdTokenIndexer(namespace="fr", lowercase_tokens=True)
+            "tokens": SingleIdTokenIndexer(namespace="target", lowercase_tokens=True)
         }
 
     @overrides

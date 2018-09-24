@@ -33,7 +33,7 @@ class EnglishToFrenchEncoderSeq2Seq(SequenceToSequence):
                  apply_attention: bool = False,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
-        super().__init__(vocab, "en", "fr", en_field_embedder, fr_field_embedding_size,
+        super().__init__(vocab, en_field_embedder, fr_field_embedding_size,
                          en_encoder, fr_decoder_type, output_projection_layer,
                          apply_attention=apply_attention,
                          decoder_num_layers=fr_decoder_num_layers)

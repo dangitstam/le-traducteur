@@ -31,8 +31,6 @@ class SequenceToSequence(Model):
     def __init__(self,
                  # Vocabluary.
                  vocab: Vocabulary,
-                 source_namespace: str,
-                 target_namespace: str,
 
                  # Embeddings.
                  source_field_embedder: TextFieldEmbedder,
@@ -42,6 +40,9 @@ class SequenceToSequence(Model):
                  encoder: Seq2SeqEncoder,
                  decoder_type: str,
                  output_projection_layer: FeedForward,
+
+                 source_namespace: str = "source",
+                 target_namespace: str = "target",
 
                  # Hyperparamters and flags.
                  decoder_attention_function: BilinearAttention = None,
@@ -60,11 +61,11 @@ class SequenceToSequence(Model):
                                      "size of the source_field_embedder. Found {} and {}, respectively."
                                      .format(encoder.get_input_dim(),
                                              source_field_embedder.get_output_dim()))
-        if output_projection_layer.get_output_dim() != vocab.get_vocab_size("fr"):
+        if output_projection_layer.get_output_dim() != vocab.get_vocab_size(target_namespace):
             raise ConfigurationError("The output dimension of the output_projection_layer must match the "
                                      "size of the French vocabulary. Found {} and {}, "
                                      "respectively.".format(output_projection_layer.get_output_dim(),
-                                                            vocab.get_vocab_size("fr")))
+                                                            vocab.get_vocab_size(target_namespace)))
         if decoder_type not in SequenceToSequence.DECODERS:
             raise ConfigurationError("Unrecognized decoder option '{}'".format(decoder_type))
 
