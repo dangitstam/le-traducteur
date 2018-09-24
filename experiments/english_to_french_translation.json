@@ -16,7 +16,7 @@
   "train_data_path": "/data/dangt7/europarl_en_fr/europarl_en_fr_train.jsonl",
   "validation_data_path": "/data/dangt7/europarl_en_fr/europarl_en_fr_dev.jsonl",
   "vocabulary": {
-    "max_vocab_size": { "en": 16000, "fr": 80000 }
+    "max_vocab_size": { "source": 16000, "target": 80000 }
   },
   "model": {
     "type": "english_to_french_seq2seq",
@@ -24,27 +24,28 @@
       "tokens": {
         "type": "embedding",
         "embedding_dim": 100,
-        "vocab_namespace": "en"
+        "vocab_namespace": "source"
       }
     },
     "fr_field_embedding_size": 100,
     "en_encoder": {
       "type": "lstm",
       "input_size": 100,
-      "hidden_size": 1024
+      "hidden_size": 1024,
+      "num_layers": 4
     },
     "fr_decoder_type": "lstm",
-    "fr_decoder_num_layers": 2,
+    "fr_decoder_num_layers": 4,
     "output_projection_layer": {
       "input_dim": 1024,
-      "num_layers": 1,
-      "hidden_dims": [80002],
-      "activations": ["relu"],
+      "num_layers": 2,
+      "hidden_dims": [10000, 80002],
+      "activations": ["relu", "relu"],
     }
   },
   "iterator": {
     "type": "bucket",
-    "sorting_keys": [["en", "num_tokens"], ["fr", "num_tokens"]],
+    "sorting_keys": [["source", "num_tokens"], ["target", "num_tokens"]],
     "batch_size": 32
   },
 
